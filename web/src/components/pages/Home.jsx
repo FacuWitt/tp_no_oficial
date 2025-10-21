@@ -1,16 +1,3 @@
-
-// APP.JSX COMMIT VALENTINA - Probar conexion con api y api.service.js
-// const Home = () => {
-//     return(
-//         <div className="h-screen bg-zinc-50">
-//             Home
-//         </div>
-//     )
-// }
-
-// export default Home;
-
-// HOME.JSX COMMIT VALENTINA
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrimaryBtn from '../common/buttons/PrimaryBtn';

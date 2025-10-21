@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { validateAndCreatePurchase } from 'services/purchase.service';
 
-import ContentCard from '../common/ContentCard';
+import ContentCard from '../common/cards/ContentCard';
 import BottomNav from '../common/layout/BottomNav';
 import Notification from '../common/Notification';
 

@@ -1,4 +1,3 @@
-// PUSH FLOR
 import React from "react";
 
 const SelectFormInput = ({ title, description, options, value, onChange }) => {

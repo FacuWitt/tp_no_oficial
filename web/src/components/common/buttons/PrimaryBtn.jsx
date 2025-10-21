@@ -1,4 +1,3 @@
-// HOME.JSX COMMIT VALENTINA
 import React from "react";
 
 const PrimaryBtn = ({ children, onClick, className }) => {

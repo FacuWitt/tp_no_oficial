@@ -1,7 +1,7 @@
 import React from "react";
 
 import SelectFormInput from "../common/forms/SelectFormInput";
-import SummaryCard from "../common/SummaryCard";
+import SummaryCard from "../common/cards/SummaryCard";
 import { GoDotFill } from "react-icons/go";
 
 const Summary = ({ formData, onPaymentMethodChange, purchaseTotals }) => {

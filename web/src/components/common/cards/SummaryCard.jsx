@@ -1,4 +1,3 @@
-// PUSH CAMI
 import React from "react";
 
 const SummaryCard = ({ content }) => {

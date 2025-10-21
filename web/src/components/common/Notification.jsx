@@ -1,4 +1,3 @@
-// PUSH CAMI
 import React, { useEffect } from 'react';
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
