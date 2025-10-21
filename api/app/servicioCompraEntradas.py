@@ -136,7 +136,7 @@ class ServicioCompraEntradas:
     """
 
     def __init__(self):
-        self.dias_abierto = [0, 1, 2, 3, 4, 5]  # Lunes a Sábado
+        self.dias_abierto = [0, 1, 2, 3, 4, 5]  # Lunes a Sábado [1, 2, 3, 4, 5, 6] 
         self.repositorio = RepositorioCompraEntradas()
         self.max_entradas = 10
         self.min_entradas = 1
@@ -157,8 +157,9 @@ class ServicioCompraEntradas:
             # Validar cada entrada individualmente
             entradas_validadas = []
             for entrada in entradas:
-                entrada_validada = self._validar_entrada_completa(entrada)
-                entradas_validadas.append(entrada_validada)
+                if not self._validar_entrada_completa(entrada):
+                    raise ValidacionError("Entrada inválida")
+                entradas_validadas.append(entrada)
             
             # Crear la compra
             compra = self._crear_compra_con_pago(entradas_validadas, usuario, forma_pago_validada)
@@ -259,7 +260,7 @@ class ServicioCompraEntradas:
             raise ValidacionError("La fecha de visita no puede ser anterior a hoy")
         
         if fecha.weekday() not in self.dias_abierto:
-            raise ValidacionError("El parque está cerrado los domingos")
+            raise ValidacionError("El parque está cerrado en la fecha seleccionada")
         
         return fecha
 
@@ -286,7 +287,7 @@ class ServicioCompraEntradas:
         except Exception as e:
             raise ValidacionError(f"Error al validar usuario: {str(e)}")
 
-    def _validar_entrada_completa(self, entrada: Entrada) -> Entrada:
+    def _validar_entrada_completa(self, entrada: Entrada) -> bool:
         """Valida todos los campos de una entrada."""
         if not entrada:
             raise ValidacionError("La entrada no puede ser nula")
@@ -313,7 +314,7 @@ class ServicioCompraEntradas:
         if entrada.fecha_visita:
             self._validar_fecha_visita(entrada.fecha_visita)
         
-        return entrada
+        return True
 
     # Métodos privados de procesamiento
     def _crear_compra_con_pago(self, entradas: List[Entrada], usuario: Usuario, forma_pago: str) -> Compra:

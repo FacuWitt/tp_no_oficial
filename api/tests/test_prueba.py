@@ -1,15 +1,19 @@
-from fastapi.testclient import TestClient
-from app.api import app
 import pytest
 from datetime import date, timedelta
+
+# TODO -> Commitear luego de los tests, cuando ya hayan implementaciones
+from fastapi.testclient import TestClient
+from app.api import app
 from app.usuario import Usuario
 from app.entrada import Entrada
 from app.validacionError import ValidacionError
 from app.compra import Compra
 from app.servicioCompraEntradas import ServicioCompraEntradas
 
-client = TestClient(app)
 service = ServicioCompraEntradas()
+client = TestClient(app)
+# ------------------------------------------------------------------------
+
 
 def test_read_root():
     resp = client.get("/")
@@ -163,8 +167,9 @@ def test_post_validar_compra_entradas_falta_dato_fecha_visita():
     assert resp_json["message"] == "Error: Debe especificar la fecha de visita"
     assert resp_json["detalle_compra"] is None
     assert resp_json["envio_de_mail"] == "NO_ENVIADO"
-"""
-# testear para usuario inexistente
+
+
+# TODO -> ESTE ES DE INTEGRACION, Testear para usuario inexistente
 def test_post_validar_compra_entradas_usuario_inexistente():
     compra_data = {
                     "forma_pago": "tarjeta",
@@ -180,9 +185,9 @@ def test_post_validar_compra_entradas_usuario_inexistente():
                 }
 
     resp = client.post("/validar-compra-entradas", json=compra_data)
-    assert resp.status_code == 400
     resp_json = resp.json()
-    assert resp_json["message"] == "Error: El usuario con ese ID no está registrado"
+    assert resp_json["status_code"] == 400
+    assert resp_json["message"] == "Error: Error al validar usuario: El usuario no está registrado"
     assert resp_json["detalle_compra"] is None
 
 
@@ -193,124 +198,133 @@ def test_post_validar_compra_entradas_usuario_inexistente():
 def test_validar_compra_tarjeta():
     forma_pago = "tarjeta"
     entradas = [
-        Entrada(devolver_fecha_dia_abierto(), edad_visitante=20, tipo_pase="Regular", precio=50.0),
-        Entrada(devolver_fecha_dia_abierto(), edad_visitante=15, tipo_pase="VIP", precio=80.0)
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=20, tipo_pase="Regular", precio=1000.0),
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=15, tipo_pase="VIP", precio=2000.0)
     ]
     usuario_id = 1
     fecha_visita = "2025-12-20"
-    resultado = service.validar_compra(forma_pago, entradas, usuario_id, fecha_visita)
-    assert resultado.estado_compra == "COMPRA_VALIDADA"
-    assert resultado.compra is not None
-    assert resultado.compra.fecha == date.today()
-    assert resultado.compra.forma_pago == "tarjeta"
-    assert len(resultado.compra.entradas) == 2
-    assert resultado.compra.precio_total == 130.0
-    assert resultado.compra.usuario.usuario_id == usuario_id
-    assert resultado.pago is not None
-    assert resultado.pago.monto == 130.0
-    assert resultado.pago.forma_pago == "tarjeta"
-    assert resultado.pago.estado_pago == "PAGO_PENDIENTE_POR_MERCADO_PAGO"
-    assert resultado.pago.codigo_pago == 0
+    compra, cant_entradas, fecha_compra, estado_envio_mail = service.validar_compra(forma_pago, entradas, usuario_id)
+
+    assert compra is not None
+    assert cant_entradas == 2
+    assert fecha_compra == date.today()
+    assert estado_envio_mail == "PENDIENTE"
+    assert compra.usuario.id_usuario == 1
+    assert compra.pago is not None
+    assert compra.pago.monto == 4700.5
+    assert compra.pago.forma_pago == "tarjeta"
+    assert compra.pago.estado_pago == "PAGO_PENDIENTE_POR_MERCADO_PAGO"
+    assert compra.pago.codigo_pago == 0
 def test_validar_compra_efectivo():
     forma_pago = "efectivo"
     entradas = [
-        Entrada(devolver_fecha_dia_abierto(), edad_visitante=20, tipo_pase="Regular", precio=50.0),
-        Entrada(devolver_fecha_dia_abierto(), edad_visitante=15, tipo_pase="VIP", precio=80.0)
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=20, tipo_pase="Regular", precio=1000.0),
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=15, tipo_pase="VIP", precio=2000.0)
     ]
     usuario_id = 1
     fecha_visita = "2025-12-20"
-    resultado = service.validar_compra(forma_pago, entradas, usuario_id, fecha_visita)
-    assert resultado.estado_compra == "COMPRA_VALIDADA"
-    assert resultado.compra is not None
-    assert resultado.compra.fecha == date.today()
-    assert resultado.compra.forma_pago == "efectivo"
-    assert len(resultado.compra.entradas) == 2
-    assert resultado.compra.precio_total == 130.0
-    assert resultado.compra.usuario.usuario_id == usuario_id
-    assert resultado.pago is not None
-    assert resultado.pago.monto == 130.0
-    assert resultado.pago.forma_pago == "efectivo"
-    assert resultado.pago.estado_pago == "PAGO_A_REALIZAR_EN_CAJA"
-    assert resultado.pago.codigo_pago == 0
+    compra, cant_entradas, fecha_compra, estado_envio_mail = service.validar_compra(forma_pago, entradas, usuario_id)
+
+    assert compra is not None
+    assert cant_entradas == 2
+    assert fecha_compra == date.today()
+    assert estado_envio_mail == "ENVIADO"
+    assert compra.usuario.id_usuario == usuario_id
+    assert compra.pago is not None
+    assert compra.pago.monto == 4700.5
+    assert compra.pago.forma_pago == "efectivo"
+    assert compra.pago.estado_pago == "PAGO_A_REALIZAR_EN_CAJA"
+    assert compra.pago.codigo_pago == 0
 
 # Validamos metodos derivados del metodo procesar_compra
 
 def test_validar_forma_pago_valida():
-    assert service.validar_forma_pago("Efectivo") == "efectivo"
-    assert service.validar_forma_pago("Tarjeta") == "tarjeta"
+    assert service._validar_forma_pago("Efectivo") == "efectivo"
+    assert service._validar_forma_pago("Tarjeta") == "tarjeta"
 def test_validar_forma_pago_invalida():
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_forma_pago("Cheque")
-    assert str(excinfo.value) == "Debe seleccionar una forma de pago válida (Efectivo o Tarjeta)"
+        service._validar_forma_pago("Cheque")
+    assert str(excinfo.value) == "Debe seleccionar una forma de pago válida: efectivo, tarjeta"
 
 def test_validar_fecha_visita_dia_valido():
     # Buscar el próximo día válido (lunes a sábado)
     fecha_valida = devolver_fecha_dia_abierto()
-    assert service.validar_fecha_visita(str(fecha_valida)) == date.fromisoformat(fecha_valida)
+    assert service._validar_fecha_visita(str(fecha_valida)) == date.fromisoformat(str(fecha_valida))
 def test_validar_fecha_visita_pasada():
     fecha_pasada = (date.today() - timedelta(days=1))
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_fecha_visita(str(fecha_pasada))
+        service._validar_fecha_visita(str(fecha_pasada))
     assert str(excinfo.value) == "La fecha de visita no puede ser anterior a hoy"
 def test_validar_fecha_visita_dia_cerrado():
     # Buscar el próximo domingo (día cerrado)
+    dias_abiertos = service.dias_abierto
+    # dias_abiertos = [0,1,2,3,4,5,6]  # Lunes a Sábado
+
     dias_adelante = 1
+    if len(dias_abiertos) == 7:
+        pytest.skip("No hay días cerrados configurados en el servicio.")
     while True:
         fecha_futura = date.today() + timedelta(days=dias_adelante)
-        if fecha_futura.weekday() == 6:  # Domingo
+        if fecha_futura.weekday() not in dias_abiertos:  # Domingo
             break
         dias_adelante += 1
     
-    domingo_cerrado = fecha_futura
+    fecha_cerrada = fecha_futura
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_fecha_visita(str(domingo_cerrado))
+        service._validar_fecha_visita(str(fecha_cerrada))
     assert str(excinfo.value) == "El parque está cerrado en la fecha seleccionada"
+ 
+def test_validar_cantidad_entradas_valida():
+    assert service._validar_cantidad_entradas(5) is True
+def test_validar_cantidad_entradas_cero():
+    cant_min_entradas = service.min_entradas
+    with pytest.raises(ValidacionError) as excinfo:
+        service._validar_cantidad_entradas(0)
+    assert str(excinfo.value) == f"Debe solicitar al menos {cant_min_entradas} entrada"
+def test_validar_cantidad_entradas_exceso():
+
+    with pytest.raises(ValidacionError) as excinfo:
+        service._validar_cantidad_entradas(11)
+    assert str(excinfo.value) == "La cantidad de entradas no puede ser mayor a 10"
+
+# ESTOS NO SE COMMITEAN AUN
+# LOS TESTS DE INTEGRACION DEBEN HACERSE LUEGO DE ALGUNAS IMPLEMENTACIONES, PRIMERO HACEMOS LOS UNITARIOS DE ARRIBA
+# TODO este es de INTEGRACION
 
 def test_valida_usuario_registrado():
-    usuario_id = 1
-    resultado = service.validar_usuario_registrado(usuario_id)
+    id_usuario = 1
+    resultado = service._validar_usuario_registrado(id_usuario)
     assert isinstance(resultado, Usuario)
-    assert resultado.usuario_id == usuario_id
+    assert resultado.id_usuario == id_usuario
 def test_valida_usuario_registrado_id_invalido():
     usuario_id_invalido = -1
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_usuario_registrado(usuario_id_invalido)
-    assert str(excinfo.value) == "El usuario con ese ID no está registrado"
-    
-def test_validar_cantidad_entradas_valida():
-    assert service.validar_cantidad_entradas(5) is True
-def test_validar_cantidad_entradas_cero():
-    with pytest.raises(ValidacionError) as excinfo:
-        service.validar_cantidad_entradas(0)
-    assert str(excinfo.value) == "Debe solicitar al menos una entrada"
-def test_validar_cantidad_entradas_exceso():
-    with pytest.raises(ValidacionError) as excinfo:
-        service.validar_cantidad_entradas(11)
-    assert str(excinfo.value) == "La cantidad de entradas no puede ser mayor a 10"
+        service._validar_usuario_registrado(usuario_id_invalido)
+    assert str(excinfo.value) == "ID de usuario inválido"
 
 def test_validar_entrada_valida():
-    entrada_valida = Entrada(fecha_visita=devolver_fecha_dia_abierto(), edad_visitante=25, tipo_pase="VIP", precio=100.0)
-    assert service.validar_entrada(entrada_valida) is True
+    entrada_valida = Entrada(fecha_visita=str(devolver_fecha_dia_abierto()), edad_visitante=25, tipo_pase="VIP", precio=2000.0)
+    assert service._validar_entrada_completa(entrada_valida) is True
 def test_validar_entrada_edad_negativa():
-    entrada_invalida = Entrada(fecha_visita=devolver_fecha_dia_abierto(), edad_visitante=-5, tipo_pase="Regular", precio=50.0)
+    entrada_invalida = Entrada(fecha_visita=str(devolver_fecha_dia_abierto()), edad_visitante=-5, tipo_pase="Regular", precio=1000.0)
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_entrada(entrada_invalida)
+        service._validar_entrada_completa(entrada_invalida)
     assert str(excinfo.value) == "La edad del visitante no puede ser negativa"
 def test_validar_entrada_tipo_pase_invalido():
-    entrada_invalida = Entrada(fecha_visita=devolver_fecha_dia_abierto(), edad_visitante=30, tipo_pase="SuperVIP", precio=150.0)
+    entrada_invalida = Entrada(fecha_visita=str(devolver_fecha_dia_abierto()), edad_visitante=30, tipo_pase="SuperVIP", precio=150.0)
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_entrada(entrada_invalida)
-    assert str(excinfo.value) == "El tipo de pase no es válido"
+        service._validar_entrada_completa(entrada_invalida)
+    assert str(excinfo.value) == "El tipo de pase debe ser uno de: VIP, Regular"
 def test_validar_entrada_precio_negativo():
-    entrada_invalida = Entrada(fecha_visita=devolver_fecha_dia_abierto(), edad_visitante=20, tipo_pase="Regular", precio=-10.0)
+    entrada_invalida = Entrada(fecha_visita=str(devolver_fecha_dia_abierto()), edad_visitante=20, tipo_pase="Regular", precio=-10.0)
     with pytest.raises(ValidacionError) as excinfo:
-        service.validar_entrada(entrada_invalida)
+        service._validar_entrada_completa(entrada_invalida)
     assert str(excinfo.value) == "El precio de la entrada no puede ser negativo"
 
+
+# de utilidad, pushear al principio
 def devolver_fecha_dia_abierto():
     fecha = date.today()
     while fecha.weekday() == 6:  # Mientras sea domingo
         fecha += timedelta(days=1)
     return fecha
-
-"""
