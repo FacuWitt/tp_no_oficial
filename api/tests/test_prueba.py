@@ -101,7 +101,7 @@ def test_post_validar_compra_entradas_con_efectivo():
     assert len(resp_json["detalle_compra"]["entradas"]) == 2
     assert resp_json["envio_de_mail"] == "ENVIADO"
 
-# TODO -> COMMIT
+# TODO -> COMMIT FACU
 def test_post_validar_compra_entradas_falta_dato_forma_pago():
     compra_data_incompleta = {
                     "entradas": [
@@ -177,7 +177,7 @@ def test_post_validar_compra_entradas_falta_dato_fecha_visita():
 # pago con tarjeta mediante Mercado pago y recepción del mail de confirmación (pasa)
 
 # de utilidad, pushear al principio
-# TODO -> COMMIT
+# TODO -> COMMIT FACU
 def devolver_fecha_dia_abierto():
     fecha = date.today()
     while fecha.weekday() == 6:  # Mientras sea domingo
@@ -227,7 +227,7 @@ def test_validar_compra_efectivo():
 
 # Validamos metodos derivados del metodo procesar_compra
 
-# TODO -> COMMIT
+# TODO -> COMMIT FACU
 def test_validar_forma_pago_valida():
     assert service._validar_forma_pago("Efectivo") == "efectivo"
     assert service._validar_forma_pago("Tarjeta") == "tarjeta"
@@ -236,7 +236,7 @@ def test_validar_forma_pago_invalida():
         service._validar_forma_pago("Cheque")
     assert str(excinfo.value) == "Debe seleccionar una forma de pago válida: efectivo, tarjeta"
 
-# TODO -> COMMIT
+# TODO -> COMMIT FACU
 def test_validar_fecha_visita_dia_valido():
     # Buscar el próximo día válido (lunes a sábado)
     fecha_valida = devolver_fecha_dia_abierto()
@@ -265,7 +265,7 @@ def test_validar_fecha_visita_dia_cerrado():
         service._validar_fecha_visita(str(fecha_cerrada))
     assert str(excinfo.value) == "El parque está cerrado en la fecha seleccionada"
  
-# TODO -> COMMIT
+# TODO -> COMMIT MATEO
 def test_validar_cantidad_entradas_valida():
     assert service._validar_cantidad_entradas(5) is True
 def test_validar_cantidad_entradas_cero():
@@ -282,7 +282,8 @@ def test_validar_cantidad_entradas_exceso():
 # ESTOS NO SE COMMITEAN AUN
 # LOS TESTS DE INTEGRACION DEBEN HACERSE LUEGO DE ALGUNAS IMPLEMENTACIONES, PRIMERO HACEMOS LOS UNITARIOS DE ARRIBA
 
-# TODO estos son de INTEGRACION
+# TODO -> COMMIT MATEO DESPUES
+# estos son de INTEGRACION
 def test_valida_usuario_registrado():
     id_usuario = 1
     resultado = service._validar_usuario_registrado(id_usuario)
@@ -314,7 +315,7 @@ def test_post_validar_compra_entradas_usuario_inexistente():
     assert resp_json["detalle_compra"] is None
 
 
-# TODO -> COMMIT
+# TODO -> COMMIT MATEO DESPUES
 def test_validar_entrada_valida():
     entrada_valida = Entrada(fecha_visita=str(devolver_fecha_dia_abierto()), edad_visitante=25, tipo_pase="VIP", precio=2000.0)
     assert service._validar_entrada_completa(entrada_valida) is True
