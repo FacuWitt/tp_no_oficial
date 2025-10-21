@@ -98,6 +98,7 @@ def test_post_validar_compra_entradas_con_efectivo():
     assert resp_json["detalle_compra"]["entradas"][1]["fecha_visita"] == "2025-12-15"
     assert len(resp_json["detalle_compra"]["entradas"]) == 2
     assert resp_json["envio_de_mail"] == "ENVIADO"
+
 def test_post_validar_compra_entradas_falta_dato_forma_pago():
     compra_data_incompleta = {
                     "entradas": [
@@ -194,6 +195,13 @@ def test_post_validar_compra_entradas_usuario_inexistente():
 # Probar comprar una entrada indicando la fecha de visita dentro de los días disponibles, una
 # cantidad de entradas menor a 10, la edad de todos los visitantes, el tipo de pase, la forma de
 # pago con tarjeta mediante Mercado pago y recepción del mail de confirmación (pasa)
+
+# de utilidad, pushear al principio
+def devolver_fecha_dia_abierto():
+    fecha = date.today()
+    while fecha.weekday() == 6:  # Mientras sea domingo
+        fecha += timedelta(days=1)
+    return fecha
 
 def test_validar_compra_tarjeta():
     forma_pago = "tarjeta"
@@ -320,11 +328,3 @@ def test_validar_entrada_precio_negativo():
     with pytest.raises(ValidacionError) as excinfo:
         service._validar_entrada_completa(entrada_invalida)
     assert str(excinfo.value) == "El precio de la entrada no puede ser negativo"
-
-
-# de utilidad, pushear al principio
-def devolver_fecha_dia_abierto():
-    fecha = date.today()
-    while fecha.weekday() == 6:  # Mientras sea domingo
-        fecha += timedelta(days=1)
-    return fecha
