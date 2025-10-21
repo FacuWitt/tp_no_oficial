@@ -1,12 +1,13 @@
 import { createHashRouter, RouterProvider } from "react-router-dom";
 
 import Layout from "./components/common/layout/Layout";
-import Loader from "./components/common/loaders/Loader";
 import Home from "./components/pages/Home";
 import Shop from "./components/pages/Shop";
 
 import { useState, useEffect } from "react";
 import MercadoPagoSimulation from "./components/simulation/MercadoPagoSimulation";
+
+import { checkApiStatus } from "services/api.service";
 
 const router = createHashRouter([
   {
@@ -20,16 +21,37 @@ const router = createHashRouter([
 ]);
 
 const App = () => {
-  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
-  // useEffect(() => {
-  //   const timer = setTimeout(() => setLoading(false), 2000);
-  //   return () => clearTimeout(timer);
-  // }, []);
+  useEffect(() => {
+    const checkApi = async () => {
+      try {
+        const data = await checkApiStatus(); 
+        console.log("Respuesta de la API:", data.message);
+        setApiError(null);
+      } catch (error) {
+        console.error("Error al conectar con la API:", error);
+        setApiError(error.message);
+      }
+    };
 
+    checkApi();
+  }, []);
+ 
+
+  if (apiError) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h1>Error de conexión</h1>
+        <p>No se pudo conectar con el servidor (EcoPark). Intenta de nuevo más tarde.</p>
+        <pre>{apiError}</pre>
+      </div>
+    );
+  }
+  
   return (
     <>
-      {loading ? <Loader /> : <RouterProvider router={router} />}
+      <RouterProvider router={router} />
     </>
   );
 }
