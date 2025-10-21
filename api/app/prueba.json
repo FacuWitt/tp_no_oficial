@@ -1,0 +1,17 @@
+{
+    "forma_pago": "tarjeta",
+    "entradas": [
+        {
+            "edad_visitante": 30,
+            "tipo_pase": "VIP",
+            "precio": 100.0
+        },
+        {
+            "edad_visitante": 25,
+            "tipo_pase": "Regular",
+            "precio": 70.0
+        }
+    ],  
+    "fecha_visita": "2024-12-15",
+    "id_usuario": 1
+}
