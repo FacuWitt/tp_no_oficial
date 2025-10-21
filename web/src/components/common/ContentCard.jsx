@@ -1,3 +1,4 @@
+// PUSH CAMI
 import React from "react";
 
 const ContentCard = ({ tittle, description, content }) => {
