@@ -21,7 +21,7 @@ const Shop = () => {
     const [showNotification, setShowNotification] = useState(false)
     const [submissionStatus, setSubmissionStatus] = useState('waiting'); // waiting, submitting, success
     const [searchParams] = useSearchParams();
-    const [currentStep, setCurrentStep] = useState(STEPS.DATE);
+    const [currentStep, setCurrentStep] = useState(STEPS.DATE); // YA ESTA
     const userId = localStorage.getItem('userId')
     const [formData, setFormData] = useState({
         userId: userId,
@@ -161,7 +161,7 @@ const Shop = () => {
                 localStorage.setItem('purchaseShopStep', currentStep);
                 localStorage.setItem('purchaseFormData', JSON.stringify(formData))
                 setTimeout(() => {
-                    navigate(`/mercadopago?total_price=${calculatePurchaseTotals().total}`);
+                    navigate(`/mercadopago?total_price=${purchaseResponse.detalle_compra.precio_total}`);
                 }, 3000);
 
             } else {
@@ -321,6 +321,7 @@ const Shop = () => {
         return { subtotal, tax, platformFee: PLATFORM_FEE, total };
     };
 
+
     const renderStepContent = () => {
         switch (currentStep) {
             case STEPS.DATE:
@@ -373,6 +374,7 @@ const Shop = () => {
         }
     };
 
+    // PARA EL PUSH DE LOS FONDOS DE LA VALE
     const getBackgroundClass = () => {
         switch (currentStep) {
             case STEPS.DATE:
