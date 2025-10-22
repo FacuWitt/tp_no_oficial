@@ -16,7 +16,6 @@
 // ]);
 
 
-// APP.JSX COMMIT VALENTINA - Probar conexion con api y api.service.js
 import { createHashRouter, RouterProvider } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { checkApiStatus } from "services/api.service";

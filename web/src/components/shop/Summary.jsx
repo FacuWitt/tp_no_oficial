@@ -1,4 +1,3 @@
-//PUSH FLOR
 import React from "react";
 
 import SelectFormInput from "../common/forms/SelectFormInput";

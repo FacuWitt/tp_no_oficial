@@ -1,4 +1,3 @@
-// PUSH VALE
 import React from 'react';
 import TicketForm from '../common/forms/TicketForm';
 import IconBtn from '../common/buttons/IconBtn';
