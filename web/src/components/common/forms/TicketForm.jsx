@@ -1,4 +1,3 @@
-// PUSH VALE
 import React from "react";
 import TextFormInput from "./TextFormInput";
 import SelectFormInput from "./SelectFormInput"
