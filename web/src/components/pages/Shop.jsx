@@ -374,7 +374,7 @@ const Shop = () => {
         }
     };
 
-    // PARA EL PUSH DE LOS FONDOS DE LA VALE
+    // AGREGAR ESTA FUNCION EN EL PUSH DE LA VALE
     const getBackgroundClass = () => {
         switch (currentStep) {
             case STEPS.DATE:
@@ -389,6 +389,7 @@ const Shop = () => {
     };
 
     return (
+        // AGREGAR ESTO ESTO EN EL DIV - ${getBackgroundClass()}
         <div className={`bg-custom-green h-full flex flex-col items-center ${getBackgroundClass()} bg-cover bg-center bg-no-repeat`}>
             {showNotification &&
                 <Notification
