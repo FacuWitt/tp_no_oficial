@@ -6,7 +6,6 @@ from .entrada import Entrada
 from .validacionError import ValidacionError
 from .usuario import Usuario
 
-
 #Clase que representa una Compra
 class Compra:
     def __init__(self, entradas: List[Entrada], usuario: Usuario, pago: Optional[Pago] = None):

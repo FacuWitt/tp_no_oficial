@@ -9,20 +9,22 @@ from .usuario import Usuario
 from .pago import Pago
 from .repositorioCompraEntradas import RepositorioCompraEntradas
 
-class ServicioCompraEntradas:
+class ServicioCompraEntradas():
     """
     Servicio que implementa la funcionalidad de compra de entradas
     según la User Story 8 de EcoHarmony Park
     """
 
     def __init__(self):
-        self.dias_abierto = [0, 1, 2, 3, 4, 5]  # Lunes a Sábado [1, 2, 3, 4, 5, 6] 
+        self.dias_abierto = [0, 1, 2, 3, 4, 5]  # Lunes a Sábado [1, 2, 3, 4, 5, 6]
         self.repositorio = RepositorioCompraEntradas()
         self.max_entradas = 10
         self.min_entradas = 1
         self.formas_pago_validas = ["efectivo", "tarjeta"]
         self.tipos_pase_validos = ["VIP", "Regular"]
 
+
+#TODO ---------------------------
     def validar_compra(self, forma_pago: str, entradas: List[Entrada], usuario_id: int) -> Tuple[Compra, int, date, str]:
         """
         Valida y procesa una compra completa.
@@ -45,7 +47,7 @@ class ServicioCompraEntradas:
             compra = self._crear_compra_con_pago(entradas_validadas, usuario, forma_pago_validada)
             
             # Envío de confirmación según forma de pago
-            estado_envio_mail = self._procesar_confirmacion_inicial(compra, forma_pago_validada)
+            estado_envio_mail = self._enviar_mail_si_es_efectivo(compra, forma_pago_validada)
             
             return compra, len(compra.entradas), compra.fecha, estado_envio_mail
             
@@ -75,7 +77,7 @@ class ServicioCompraEntradas:
             compra.pago.codigo_pago = self._generar_codigo_pago()
             compra = self.repositorio.actualizar_pago_compra(compra)
             
-            estado_envio_mail = self._enviar_mail_confirmacion_tarjeta(compra)
+            estado_envio_mail = self._enviar_mail_si_es_tarjeta(compra)
             
             return compra, len(compra.entradas), compra.fecha, estado_envio_mail
             
@@ -117,6 +119,8 @@ class ServicioCompraEntradas:
         
         return resumen
 
+
+#TODO ---------------------------
     # Métodos privados de validación
     def _validar_forma_pago(self, forma_pago: str) -> str:
         """Valida y normaliza la forma de pago."""
@@ -168,6 +172,7 @@ class ServicioCompraEntradas:
             raise ValidacionError(f"Error al validar usuario: {str(e)}")
 
     def _validar_entrada_completa(self, entrada: Entrada) -> bool:
+        
         """Valida todos los campos de una entrada."""
         if not entrada:
             raise ValidacionError("La entrada no puede ser nula")
@@ -196,6 +201,7 @@ class ServicioCompraEntradas:
         
         return True
 
+#TODO ---------------------------
     # Métodos privados de procesamiento
     def _crear_compra_con_pago(self, entradas: List[Entrada], usuario: Usuario, forma_pago: str) -> Compra:
         """Crea la compra con el pago correspondiente."""
@@ -242,18 +248,16 @@ class ServicioCompraEntradas:
         """Genera un código de pago único."""
         return random.randint(100000, 999999)
 
-    def _procesar_confirmacion_inicial(self, compra: Compra, forma_pago: str) -> str:
+    def _enviar_mail_si_es_efectivo(self, compra: Compra, forma_pago: str) -> str:
         """Procesa la confirmación inicial según la forma de pago."""
         if forma_pago == "efectivo":
-            return self._enviar_mail_confirmacion_efectivo(compra)
+            """Envía confirmación para pago en efectivo."""
+            print(f"Enviando mail de confirmación de pago en efectivo para la compra {compra.id_compra}")
+            return "ENVIADO"
         return "PENDIENTE"
 
-    def _enviar_mail_confirmacion_efectivo(self, compra: Compra) -> str:
-        """Envía confirmación para pago en efectivo."""
-        print(f"Enviando mail de confirmación de pago en efectivo para la compra {compra.id_compra}")
-        return "ENVIADO"
 
-    def _enviar_mail_confirmacion_tarjeta(self, compra: Compra) -> str:
+    def _enviar_mail_si_es_tarjeta(self, compra: Compra) -> str:
         """Envía confirmación para pago con tarjeta."""
         print(f"Enviando mail de confirmación de pago con tarjeta para la compra {compra.id_compra}")
         return "ENVIADO"

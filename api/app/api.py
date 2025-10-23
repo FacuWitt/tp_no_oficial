@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-service = ServicioCompraEntradas()
+app.service = ServicioCompraEntradas()
 
 @app.get("/")
 def read_root():
@@ -51,14 +51,14 @@ def validar_compra_entradas(compra: dict):
         entradas.append(entrada)
 
     try:
-        compra_result, cantidad_entradas, fecha_compra, estado_envio_de_mail = service.validar_compra(
+        compra_result, cantidad_entradas, fecha_compra, estado_envio_de_mail = app.service.validar_compra(
             forma_pago, 
             entradas, 
             id_usuario
         )
         
         # Usar el método generar_resumen_compra del servicio
-        detalle_compra = service.generar_resumen_compra(compra_result)
+        detalle_compra = app.service.generar_resumen_compra(compra_result)
         
         return {
             "status_code": 200, 
@@ -76,10 +76,10 @@ def validar_compra_entradas(compra: dict):
 @app.post("/procesar-pago/{compra_id}")
 def procesar_pago(compra_id: int):
     try:
-        compra, cantidad_entradas, fecha_compra, estado_envio_de_mail = service.procesar_pago_tarjeta(compra_id)
+        compra, cantidad_entradas, fecha_compra, estado_envio_de_mail = app.service.procesar_pago_tarjeta(compra_id)
         
         # Usar el método generar_resumen_compra del servicio
-        detalle_compra = service.generar_resumen_compra(compra)
+        detalle_compra = app.service.generar_resumen_compra(compra)
         
         return {
             "status_code": 200, 

@@ -1,5 +1,6 @@
 import pytest
 from datetime import date, timedelta
+import sqlite3 
 
 # ------------------------------------------------------------------------
 # TODO -> Commitear luego de los tests, cuando ya hayan implementaciones
@@ -7,12 +8,33 @@ from fastapi.testclient import TestClient
 from app.api import app
 from app.usuario import Usuario
 from app.entrada import Entrada
+from app.pago import Pago
 from app.validacionError import ValidacionError
 from app.compra import Compra
 from app.servicioCompraEntradas import ServicioCompraEntradas
+import os
 
-service = ServicioCompraEntradas()
+current_dir = os.path.dirname(os.path.abspath(__file__))
+path_db = os.path.join(current_dir, '..', '..', 'db', 'test_app.db')
 client = TestClient(app)
+service = client.app.service
+service.repositorio.path_db = path_db
+
+def init_test_db():
+    conn =  sqlite3.connect(path_db)
+    cursor = conn.cursor()
+    
+    # Eliminar datos existentes
+    cursor.execute('DELETE FROM Entrada WHERE id_entrada > 2')
+    cursor.execute('DELETE FROM Compra WHERE id_compra > 1')
+    cursor.execute('DELETE FROM Pago WHERE id_pago > 1')
+    cursor.execute('DELETE FROM Usuario WHERE id_usuario > 1')
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('Entrada', 'Pago', 'Compra', 'Usuario');")
+    # Guardar cambios
+    conn.commit()
+    conn.close()
+
+init_test_db()
 # ------------------------------------------------------------------------
 
 # TODO -> COMMIT
@@ -334,3 +356,117 @@ def test_validar_entrada_precio_negativo():
     with pytest.raises(ValidacionError) as excinfo:
         service._validar_entrada_completa(entrada_invalida)
     assert str(excinfo.value) == "El precio de la entrada no puede ser negativo"
+
+
+
+# TODO -> COLO --------------
+
+def test_post_procesar_pago():
+    body_post_json = {
+                "forma_pago": "tarjeta",
+                "entradas": [
+                    {
+                        "edad_visitante": 30,
+                        "tipo_pase": "VIP",
+                        "precio": 2000.0
+                    },
+                    {
+                        "edad_visitante": 25,
+                        "tipo_pase": "Regular",
+                        "precio": 1000.0
+                    }
+                ],
+                "fecha_visita": "2025-12-15",
+                "id_usuario": 1
+            }
+
+    resp_validar_compra = client.post("/validar-compra-entradas", json=body_post_json)
+    resp_validar_compra_json = resp_validar_compra.json()
+    assert resp_validar_compra_json["status_code"] == 200
+    assert resp_validar_compra_json["message"] == "Compra validada con éxito"
+    assert "detalle_compra" in resp_validar_compra_json
+    assert resp_validar_compra_json["detalle_compra"]["pago"]["forma_pago"] == "tarjeta"
+    assert resp_validar_compra_json["detalle_compra"]["pago"]["estado"] == "PAGO_PENDIENTE_POR_MERCADO_PAGO"
+    assert resp_validar_compra_json["envio_de_mail"] == "PENDIENTE"
+    id_compra = resp_validar_compra_json["detalle_compra"]["id_compra"]
+    monto_compra = resp_validar_compra_json["detalle_compra"]["precio_total"]
+    
+    resp = client.post(f"/procesar-pago/{id_compra}")
+    resp_json = resp.json()
+    assert resp_json["status_code"] == 200
+    assert resp_json["message"] == "Pago procesado con éxito"
+    assert "detalle_compra" in resp_json
+    assert resp_json["detalle_compra"]["id_compra"] == id_compra
+    assert resp_json["detalle_compra"]["pago"]["forma_pago"] == "tarjeta"
+    assert resp_json["detalle_compra"]["pago"]["estado"] == "PAGO_EXITOSO_POR_TARJETA_EN_MERCADO_PAGO"
+    assert resp_json["detalle_compra"]["pago"]["codigo"] is not None
+    assert resp_json["detalle_compra"]["pago"]["monto"] == monto_compra
+    assert resp_json["envio_de_mail"] == "ENVIADO"
+
+def test_post_procesar_pago_compra_no_existente():
+    id_compra = 999
+    resp = client.post(f"/procesar-pago/{id_compra}")
+    resp_json = resp.json()
+    assert resp_json["status_code"] == 400
+    assert resp_json["message"] == "Error: La compra no existe"
+    assert resp_json["detalle_compra"] is None
+    assert resp_json["cantidad_entradas"] == 0
+    assert resp_json["fecha_compra"] is None
+    assert resp_json["envio_de_mail"] == "NO_ENVIADO"
+
+def test_generar_codigo_pago():
+    codigo = service._generar_codigo_pago()
+    assert isinstance(codigo, int)
+    assert 100000 <= codigo <= 999999
+
+# TODO -> COLO ---------------
+
+def test_enviar_mail_si_es_efectivo_es_efectivo():
+    entradas = [
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=20, tipo_pase="Regular", precio=1000.0),
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=15, tipo_pase="VIP", precio=2000.0)
+    ]
+    entradas[0].id_entrada = 1
+    entradas[1].id_entrada = 2
+    usuario = Usuario("Juan", "Pérez", "juan@example.com", "123")
+    usuario.id_usuario = 1
+    pago = Pago("efectivo", "PAGO_A_REALIZAR_EN_CAJA", 0, 4700.5)
+    pago.id_pago = 1
+    compra = Compra(entradas, usuario, pago)
+    compra.id_compra = 1
+    resultado = service._enviar_mail_si_es_efectivo(compra, pago.forma_pago)
+    assert resultado == "ENVIADO"
+
+def test_enviar_mail_si_es_efectivo_es_tarjeta():
+    entradas = [
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=20, tipo_pase="Regular", precio=1000.0),
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=15, tipo_pase="VIP", precio=2000.0)
+    ]
+    entradas[0].id_entrada = 1
+    entradas[1].id_entrada = 2
+    usuario = Usuario("Juan", "Pérez", "juan@example.com", "123")
+    usuario.id_usuario = 1
+    pago = Pago("tarjeta", "PAGO_A_REALIZAR_EN_CAJA", 0, 4700.5)
+    pago.id_pago = 1
+    compra = Compra(entradas, usuario, pago)
+    compra.id_compra = 1
+    resultado = service._enviar_mail_si_es_efectivo(compra, pago.forma_pago)
+    assert resultado == "PENDIENTE"
+
+def test_enviar_mail_si_es_tarjeta():
+    entradas = [
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=20, tipo_pase="Regular", precio=1000.0),
+        Entrada(str(devolver_fecha_dia_abierto()), edad_visitante=15, tipo_pase="VIP", precio=2000.0)
+    ]
+    entradas[0].id_entrada = 1
+    entradas[1].id_entrada = 2
+    usuario = Usuario("Juan", "Pérez", "juan@example.com", "123")
+    usuario.id_usuario = 1
+    pago = Pago("tarjeta", "PAGO_A_REALIZAR_EN_CAJA", 0, 4700.5)
+    pago.id_pago = 1
+    compra = Compra(entradas, usuario, pago)
+    compra.id_compra = 1
+    resultado = service._enviar_mail_si_es_tarjeta(compra)
+    assert resultado == "ENVIADO"
+
+
